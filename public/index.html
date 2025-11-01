@@ -262,6 +262,11 @@
                 >
                   <span className="tag">[{f.type || "info"}]</span>
                   <Severity level={f.severity} />
+                  {f.effort && (
+                    <span className="tag">
+                      Effort: {f.effort.bucket} · {f.effort.hours}h
+                    </span>
+                  )}
                 </div>
                 <strong>{f.title}</strong>
                 <div style={{ opacity: 0.85, marginTop: 4 }}>{f.detail}</div>
@@ -285,16 +290,42 @@
                   </div>
                 )}
 
-                {typeof f.snippet === "string" &&
-                  f.snippet.trim() &&
-                  !f.code_excerpt && (
-                    <div style={{ marginTop: 6 }}>
-                      <div className="subtle" style={{ fontSize: 12 }}>
-                        Fragment de cod:
-                      </div>
-                      <pre>{f.snippet}</pre>
+                {f.docs && (
+                  <details style={{ marginTop: 6 }}>
+                    <summary>Documentație</summary>
+                    <div className="subtle" style={{ fontSize: 12, marginTop: 6 }}>
+                      De ce contează
                     </div>
-                  )}
+                    <div>{f.docs.why_it_matters || "Unknown"}</div>
+
+                    <div className="subtle" style={{ fontSize: 12, marginTop: 6 }}>
+                      Cum se rezolvă
+                    </div>
+                    <ul>
+                      {(f.docs.how_to_fix || []).map((s, i) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+
+                    {f.docs.bad_example && (
+                      <>
+                        <div className="subtle" style={{ fontSize: 12 }}>
+                          Exemplu greșit
+                        </div>
+                        <pre>{f.docs.bad_example}</pre>
+                      </>
+                    )}
+
+                    {f.docs.good_example && (
+                      <>
+                        <div className="subtle" style={{ fontSize: 12 }}>
+                          Exemplu corect
+                        </div>
+                        <pre>{f.docs.good_example}</pre>
+                      </>
+                    )}
+                  </details>
+                )}
               </div>
             ))}
           </div>
@@ -312,6 +343,14 @@
         );
       }
 
+      function looksPlausibleSource(text) {
+        if (!text || typeof text !== "string") return false;
+        if (text.trim().length < 25) return false;
+        if (/^[\w\-. ]+\.(js|ts|jsx|tsx)$/i.test(text.trim())) return false;
+        if (!/[{}();=]/.test(text) && !/\b(function|const|let|var)\b/.test(text)) return false;
+        return true;
+      }
+
       function App() {
         const [filename, setFilename] = useState("snippet.js");
         const [code, setCode] = useState(`// pune codul aici
@@ -327,7 +366,6 @@ function hello(name){
         const [loading, setLoading] = useState(false);
         const [error, setError] = useState("");
         const [beforeFix, setBeforeFix] = useState(null);
-        const [showRaw, setShowRaw] = useState(false);
 
         function handleFile(e) {
           const file = e.target.files?.[0];
@@ -376,20 +414,23 @@ function hello(name){
               raw: data.raw,
               changes: data.changes || [],
               suggestions: [],
+              findings: data.findings || [],
             });
-            if (data?.fixed_code) setCode(data.fixed_code);
 
-            if (
-              data.engine === "auto-fix-invalid" ||
-              data.engine === "auto-fix-reverted"
-            ) {
+            const bad =
+              !data.fixed_code ||
+              data.fixed_code.trim() === filename.trim() ||
+              data.fixed_code.trim().length < 25 ||
+              !looksPlausibleSource(data.fixed_code);
+
+            if (!bad && (data.engine === "ollama-fix" || data.engine === "auto-fix-fallback-local")) {
+              setCode(data.fixed_code);
+            } else if (data.engine === "auto-fix-invalid" || data.engine === "auto-fix-fallback") {
               const reason =
                 Array.isArray(data.changes) && data.changes[0]?.detail
                   ? `Motiv: ${data.changes[0].detail}`
-                  : "";
-              setError(
-                `Auto-fix a fost revenit sau nu a aplicat modificări. ${reason}`
-              );
+                  : "Output nevalid de la model.";
+              setError(`Auto-fix nu a fost aplicat. ${reason}`);
             }
           } catch {
             setError("Eroare la auto-fix");
@@ -425,6 +466,7 @@ function hello(name){
         const findings = report?.findings || report?.structured?.findings || [];
         const suggestions =
           report?.suggestions || report?.structured?.suggestions || [];
+        const effortTotal = report?.effort_total;
 
         return (
           <Fragment>
@@ -480,6 +522,11 @@ function hello(name){
                 <span className="tag">
                   file: {report?.filename || filename}
                 </span>
+                {effortTotal && (
+                  <span className="tag">
+                    Effort total: {effortTotal.bucket} · {effortTotal.hours}h
+                  </span>
+                )}
               </div>
             </div>
 
