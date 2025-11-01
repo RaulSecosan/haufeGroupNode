@@ -3,161 +3,164 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>React simplu – AI Code Review & Auto-fix</title>
+    <title>AI Code Review</title>
     <style>
       :root {
-        --muted: #f5f5f5;
-        --border: #e5e7eb;
-        --text: #111827;
-        --low: #3b82f6;
-        --med: #f59e0b;
-        --high: #ef4444;
+        --bg: #0b1220;
+        --panel: #0f172a;
+        --soft: #111a2e;
+        --muted: #0e1629;
+        --ink: #e5e7eb;
+        --ink-dim: #cbd5e1;
+        --brand: #60a5fa;
+        --ok: #22c55e;
+        --warn: #f59e0b;
+        --err: #ef4444;
+        --brd: rgba(255,255,255,.08);
       }
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
       body {
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        margin: 24px;
-        color: var(--text);
+        margin: 0;
+        background: radial-gradient(1200px 800px at 10% -10%, #0b1d42 0%, var(--bg) 60%) fixed;
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       }
-      .btn {
-        padding: 8px 14px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        cursor: pointer;
-        background: #fff;
+      .container {
+        max-width: 1100px;
+        margin: 32px auto;
+        padding: 0 20px;
       }
-      input,
-      select {
-        padding: 8px;
-        margin-right: 8px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
+      .header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 18px;
       }
-      textarea {
-        width: 100%;
-        height: 260px;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        padding: 10px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        background: var(--muted);
+      .title {
+        font-size: 32px; font-weight: 800; letter-spacing: .2px;
       }
-      pre {
-        background: var(--muted);
-        padding: 10px;
-        border-radius: 10px;
-        white-space: pre-wrap;
-        word-break: break-word;
-        border: 1px solid var(--border);
+      .subtle {
+        color: var(--ink-dim);
+        font-size: 13px;
       }
-      hr {
-        margin: 24px 0;
-        border: 0;
-        height: 1px;
-        background: var(--border);
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-      .card {
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 12px;
-        background: #fff;
-      }
-      .tag {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 999px;
-        font-size: 12px;
-        background: #fff;
-        border: 1px solid var(--border);
-        margin-right: 6px;
-      }
-      .sev {
-        font-weight: 600;
-      }
-      .sev-low {
-        color: var(--low);
-      }
-      .sev-medium {
-        color: var(--med);
-      }
-      .sev-high {
-        color: var(--high);
+      .panel {
+        background: linear-gradient(180deg, var(--panel) 0%, var(--soft) 100%);
+        border: 1px solid var(--brd);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,.25);
       }
       .toolbar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        align-items: center;
+        display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+        padding: 10px; border-radius: 12px; background: rgba(255,255,255,.03);
+        border: 1px solid var(--brd); margin-bottom: 12px;
       }
-      @media (min-width: 860px) {
-        .grid {
-          grid-template-columns: 1fr 1fr;
-        }
+      .btn {
+        padding: 9px 14px; border-radius: 10px; cursor: pointer; border: 1px solid var(--brd);
+        background: #101a33; color: var(--ink); transition: .15s ease; font-weight: 600;
       }
+      .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.25); }
+      .btn.primary { background: linear-gradient(180deg, #2563eb, #1d4ed8); border: 1px solid rgba(255,255,255,.15); }
+      .btn.ghost { background: transparent; }
+      .tag {
+        display: inline-flex; align-items: center; gap: 6px;
+        border: 1px solid var(--brd); padding: 4px 10px; border-radius: 999px;
+        font-size: 12px; background: rgba(255,255,255,.03);
+      }
+      input[type="text"], select {
+        height: 38px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--brd);
+        background: #0e1629; color: var(--ink); outline: none;
+      }
+      input[type="file"] { display: none; }
+      label.file {
+        padding: 9px 14px; border-radius: 10px; cursor: pointer; border: 1px dashed var(--brd);
+        background: rgba(255,255,255,.04); color: var(--ink); transition: .15s ease; font-weight: 600;
+      }
+      label.file:hover { background: rgba(255,255,255,.06); }
+      textarea {
+        width: 100%; min-height: 280px; resize: vertical;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 13px; line-height: 1.5;
+        background: #091226; color: #e2e8f0;
+        border: 1px solid var(--brd); border-radius: 12px;
+        padding: 12px;
+      }
+      .grid { display: grid; gap: 12px; }
+      @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+      .card {
+        background: rgba(255,255,255,.03); border: 1px solid var(--brd); border-radius: 12px; padding: 12px;
+      }
+      pre {
+        margin: 8px 0 0; background: #0a1330; border: 1px solid var(--brd);
+        border-radius: 10px; padding: 10px; color: #dbeafe; overflow: auto;
+        white-space: pre-wrap; word-break: break-word;
+      }
+      .sev { font-weight: 700; }
+      .sev-low { color: var(--brand); }
+      .sev-medium { color: var(--warn); }
+      .sev-high { color: var(--err); }
+      .error { color: var(--err); margin-top: 8px; }
+      .meta { display:flex; gap:8px; flex-wrap:wrap; }
     </style>
   </head>
   <body>
-    <h1>React simplu</h1>
-    <div id="root"></div>
+    <div class="container">
+      <div class="header">
+        <div class="title">AI Code Review</div>
+        <div class="subtle">Local · React + Express · Ollama</div>
+      </div>
 
-    <!-- React + ReactDOM -->
-    <script
-      src="https://unpkg.com/react@18/umd/react.development.js"
-      crossorigin
-    ></script>
-    <script
-      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
-      crossorigin
-    ></script>
-    <!-- Babel pentru JSX -->
+      <div class="panel" id="root"></div>
+    </div>
+
+    <!-- React 18 UMD -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script type="text/babel">
       const { useState, useEffect, Fragment } = React;
 
       function Severity({ level }) {
-        const cls =
-          level === "high"
-            ? "sev-high"
-            : level === "medium"
-            ? "sev-medium"
-            : "sev-low";
-        return (
-          <span className={`sev ${cls}`}>
-            {(level || "info").toUpperCase()}
-          </span>
-        );
+        const cls = level === "high" ? "sev-high" : level === "medium" ? "sev-medium" : "sev-low";
+        return <span className={`sev ${cls}`}>{(level || "info").toUpperCase()}</span>;
       }
 
       function Findings({ list }) {
         if (!Array.isArray(list) || list.length === 0) {
-          return (
-            <div className="card">
-              Nu s-au găsit probleme pe analiza curentă.
-            </div>
-          );
+          return <div className="card">Nu s-au găsit probleme pe analiza curentă.</div>;
         }
         return (
           <div className="grid">
             {list.map((f, i) => (
               <div className="card" key={i}>
-                <div style={{ marginBottom: 6 }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
                   <span className="tag">[{f.type || "info"}]</span>
                   <Severity level={f.severity} />
                 </div>
                 <strong>{f.title}</strong>
                 <div style={{ opacity: 0.85, marginTop: 4 }}>{f.detail}</div>
+
                 {Array.isArray(f.lines) && f.lines.length > 0 && (
                   <div style={{ marginTop: 6, fontSize: 12, opacity: 0.8 }}>
                     Linii: {f.lines.slice(0, 15).join(", ")}
                     {f.lines.length > 15 ? " ..." : ""}
+                  </div>
+                )}
+
+                {Array.isArray(f.code_excerpt) && f.code_excerpt.length > 0 && (
+                  <div style={{ marginTop: 6 }}>
+                    <div className="subtle" style={{ fontSize: 12 }}>Fragment(e) de cod:</div>
+                    <pre>
+                      {f.code_excerpt.slice(0, 5).join("\n")}
+                      {f.code_excerpt.length > 5 ? "\n..." : ""}
+                    </pre>
+                  </div>
+                )}
+
+                {typeof f.snippet === "string" && f.snippet.trim() && !f.code_excerpt && (
+                  <div style={{ marginTop: 6 }}>
+                    <div className="subtle" style={{ fontSize: 12 }}>Fragment de cod:</div>
+                    <pre>{f.snippet}</pre>
                   </div>
                 )}
               </div>
@@ -168,23 +171,15 @@
 
       function Suggestions({ items }) {
         if (!Array.isArray(items) || items.length === 0) return null;
-        return (
-          <ul>
-            {items.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ul>
-        );
+        return <ul>{items.map((s, i) => <li key={i}>{s}</li>)}</ul>;
       }
 
       function App() {
-        const [name, setName] = useState("");
-        const [ping, setPing] = useState(null);
-
         const [filename, setFilename] = useState("snippet.js");
         const [code, setCode] = useState(`// pune codul aici
 function hello(name){
-  console.log("Hello, " + name) // TODO: folosește template string
+  // TODO: folosește template string
+  console.log("Hello, " + name)
 }
 `);
         const [useLlm, setUseLlm] = useState(true);
@@ -193,17 +188,10 @@ function hello(name){
         const [report, setReport] = useState(null);
         const [loading, setLoading] = useState(false);
         const [error, setError] = useState("");
-        const [beforeFix, setBeforeFix] = useState(null); // pentru „Revenire”
-
-        async function callPing() {
-          const res = await fetch("/api/ping");
-          setPing(await res.json());
-        }
+        const [beforeFix, setBeforeFix] = useState(null);
 
         async function submitReview() {
-          setLoading(true);
-          setError("");
-          setReport(null);
+          setLoading(true); setError(""); setReport(null);
           try {
             const res = await fetch("/api/review", {
               method: "POST",
@@ -219,10 +207,9 @@ function hello(name){
         }
 
         async function autoFixAI() {
-          setLoading(true);
-          setError("");
+          setLoading(true); setError("");
           try {
-            setBeforeFix(code); // salvează starea anterioară pentru revenire
+            setBeforeFix(code);
             const res = await fetch("/api/auto-fix", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -238,6 +225,9 @@ function hello(name){
                 raw: data.raw,
                 changes: data.changes,
               });
+              if (data.engine === "auto-fix-invalid" || data.engine === "auto-fix-reverted") {
+                setError("Auto-fix a fost revenit pentru a păstra validitatea sau comentariile.");
+              }
             } else {
               setError("Auto-fix: răspuns invalid");
             }
@@ -257,50 +247,53 @@ function hello(name){
 
         function downloadJson() {
           const payload = report?.structured || report || {};
-          const blob = new Blob([JSON.stringify(payload, null, 2)], {
-            type: "application/json",
-          });
+          const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
-          a.href = url;
-          a.download = (report?.filename || "report") + ".json";
-          a.click();
+          a.href = url; a.download = (report?.filename || "report") + ".json"; a.click();
           URL.revokeObjectURL(url);
         }
 
+        function handleFile(e) {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            setFilename(file.name);
+            setCode(String(reader.result || ""));
+          };
+          reader.readAsText(file);
+        }
+
         useEffect(() => {
-          callPing();
+          // opțional, autofocus pe editor
+          document.getElementById("code-area")?.focus();
         }, []);
 
         const engine = report?.engine || "n/a";
-        const structured = report?.structured;
-        const findings = structured?.findings || report?.findings || [];
-        const suggestions =
-          structured?.suggestions || report?.suggestions || [];
+        const findings = report?.structured?.findings || report?.findings || [];
+        const suggestions = report?.structured?.suggestions || report?.suggestions || [];
 
         return (
           <Fragment>
-            <p>Salut, {name || "vizitator"}!</p>
-            <input
-              placeholder="scrie un nume..."
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <button className="btn" onClick={callPing}>
-              Ping backend
-            </button>
-            <pre>{ping ? JSON.stringify(ping, null, 2) : "..."}</pre>
-
-            <hr />
-
-            <h3>Code review local</h3>
-            <div className="toolbar" style={{ marginBottom: 8 }}>
+            <div className="toolbar">
               <input
-                placeholder="filename"
+                type="text"
+                placeholder="ex: snippet.js"
                 value={filename}
                 onChange={(e) => setFilename(e.target.value)}
               />
-              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+
+              <label className="file">
+                Încarcă fișier
+                <input
+                  type="file"
+                  accept=".js,.jsx,.ts,.tsx,.json,.py,.java,.go,.rb,.cs,.cpp,.c,.txt"
+                  onChange={handleFile}
+                />
+              </label>
+
+              <label className="tag" style={{ gap: 8 }}>
                 <input
                   type="checkbox"
                   checked={useLlm}
@@ -308,67 +301,63 @@ function hello(name){
                 />
                 Use LLM
               </label>
+
               <select value={model} onChange={(e) => setModel(e.target.value)}>
                 <option value="llama3">llama3</option>
                 <option value="qwen2.5-coder:7b">qwen2.5-coder:7b</option>
               </select>
-              <button className="btn" onClick={submitReview} disabled={loading}>
+
+              <button className="btn primary" onClick={submitReview} disabled={loading}>
                 {loading ? "Analizez..." : "Trimite spre analiză"}
               </button>
-              <button className="btn" onClick={autoFixAI} disabled={loading}>
-                Auto-fix (AI)
-              </button>
+              <button className="btn" onClick={autoFixAI} disabled={loading}>Auto-fix (AI)</button>
               {beforeFix != null && (
-                <button className="btn" onClick={undoFix}>
-                  Revenire
-                </button>
+                <button className="btn ghost" onClick={undoFix}>Revenire</button>
               )}
               {report && (
-                <button className="btn" onClick={downloadJson}>
-                  Descarcă JSON
-                </button>
+                <button className="btn ghost" onClick={downloadJson}>Descarcă JSON</button>
               )}
-              <span className="tag">engine: {engine}</span>
-              <span className="tag">file: {report?.filename || filename}</span>
+
+              <div className="meta" style={{ marginLeft: "auto" }}>
+                <span className="tag">engine: {engine}</span>
+                <span className="tag">file: {report?.filename || filename}</span>
+              </div>
             </div>
 
             <textarea
+              id="code-area"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               spellCheck={false}
+              placeholder="// pune codul aici..."
             />
 
-            {error && (
-              <div style={{ color: "crimson", marginTop: 8 }}>{error}</div>
-            )}
+            {error && <div className="error">{error}</div>}
 
             {report && (
-              <div style={{ marginTop: 12 }}>
-                {engine === "ollama-llm" && !structured && (
+              <div style={{ marginTop: 14 }}>
+                {engine === "ollama-llm" && !report.structured && (
                   <div className="card" style={{ marginBottom: 12 }}>
                     <strong>LLM Feedback (raw)</strong>
                     <pre>{report.raw || ""}</pre>
                   </div>
                 )}
 
-                {Array.isArray(report?.changes) &&
-                  report.changes.length > 0 && (
-                    <div className="card" style={{ marginBottom: 12 }}>
-                      <strong>Auto-fix changes</strong>
-                      <ul>
-                        {report.changes.map((c, i) => (
-                          <li key={i}>
-                            <strong>{c.title}</strong> — {c.detail}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                {Array.isArray(report?.changes) && report.changes.length > 0 && (
+                  <div className="card" style={{ marginBottom: 12 }}>
+                    <strong>Auto-fix changes</strong>
+                    <ul>
+                      {report.changes.map((c, i) => (
+                        <li key={i}><strong>{c.title}</strong> — {c.detail}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-                <h4>Findings</h4>
+                <h3 style={{ margin: "10px 0" }}>Findings</h3>
                 <Findings list={findings} />
 
-                <h4 style={{ marginTop: 16 }}>Sugestii</h4>
+                <h3 style={{ margin: "16px 0 8px" }}>Sugestii</h3>
                 <Suggestions items={suggestions} />
               </div>
             )}

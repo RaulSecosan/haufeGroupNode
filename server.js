@@ -1,5 +1,6 @@
-// Express 5 + Ollama (LLM local) + fallback simplu (doar dacă LLM eșuează)
-// Node 18+ recomandat (fetch nativ).
+// Express 5 + Ollama local + fallback, cu:
+// - Auto-fix care păstrează comentariile (validare și revert dacă e cazul)
+// - Findings cu linii + fragmente de cod (code_excerpt)
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -9,12 +10,12 @@ app.use(cors());
 app.use(express.json({ limit: "512kb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-// Ping sănătate
+// Health
 app.get("/api/ping", (req, res) => {
   res.json({ ok: true, ts: Date.now() });
 });
 
-/* ------------------------ UTILITARE COMUNE ------------------------ */
+/* ------------------------ Utilitare ------------------------ */
 function tryParseJsonResponse(text) {
   try {
     return JSON.parse(text);
@@ -35,51 +36,128 @@ function tryParseJsonResponse(text) {
   return null;
 }
 
-/* ------------------------ FALLBACK: REVIEW SIMPLU ------------------------ */
-// folosit numai dacă LLM nu răspunde. Nu „decide”, doar ajută cu ceva minim.
+function isJsSyntaxValid(code) {
+  try {
+    new Function(code);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// extrage comentariile (pentru validare post auto-fix)
+function extractComments(code) {
+  const commentRegex = /(\/\*[\s\S]*?\*\/)|(\/\/[^\n]*)/g;
+  return (code.match(commentRegex) || []).map((s) => s.trim());
+}
+
+/* ------------------------ Fallback local: linii + fragmente ------------------------ */
 function simpleStaticReview(code = "", filename = "snippet.js") {
   const findings = [];
-  if (!code.trim()) {
-    return {
-      engine: "rules",
-      filename,
-      findings: [
-        {
-          type: "input",
-          severity: "high",
-          title: "Cod lipsă",
-          detail: "Trimite un snippet de cod.",
-          lines: [],
-        },
-      ],
-      suggestions: [],
-    };
-  }
   const lines = code.split(/\r?\n/);
-  const long = lines
+
+  const pushFinding = (fLines, type, severity, title, detail) => {
+    const code_excerpt = fLines
+      .slice(0, 10)
+      .map((n) => lines[n - 1]?.trim())
+      .filter(Boolean);
+    findings.push({
+      type,
+      severity,
+      title,
+      detail,
+      lines: fLines,
+      code_excerpt,
+    });
+  };
+
+  if (!code.trim()) {
+    findings.push({
+      type: "input",
+      severity: "high",
+      title: "Cod lipsă",
+      detail: "Trimite un snippet de cod.",
+      lines: [],
+      code_excerpt: [],
+    });
+    return { engine: "rules", filename, findings, suggestions: [] };
+  }
+
+  // 1) Linii > 120 caractere
+  const longLines = lines
     .map((l, i) => ({ n: i + 1, len: l.length }))
     .filter((x) => x.len > 120)
     .map((x) => x.n);
-  if (long.length)
-    findings.push({
-      type: "style",
-      severity: "info",
-      title: "Linii lungi",
-      detail: `${long.length} linii depășesc 120 caractere.`,
-      lines: long,
-    });
+  if (longLines.length) {
+    pushFinding(
+      longLines,
+      "style",
+      "info",
+      "Linii lungi",
+      `${longLines.length} linii depășesc 120 caractere.`
+    );
+  }
+
+  // 2) eval()
+  const evalLines = [];
+  lines.forEach((l, i) => {
+    if (/\beval\s*\(/.test(l)) evalLines.push(i + 1);
+  });
+  if (evalLines.length) {
+    pushFinding(
+      evalLines,
+      "security",
+      "high",
+      "Folosire eval()",
+      "Evită eval(); poate executa cod arbitrar."
+    );
+  }
+
+  // 3) var
+  const varLines = [];
+  lines.forEach((l, i) => {
+    if (/\bvar\s+/.test(l)) varLines.push(i + 1);
+  });
+  if (varLines.length) {
+    pushFinding(
+      varLines,
+      "style",
+      "medium",
+      "Folosire var",
+      "Preferă let/const pentru scoping clar."
+    );
+  }
+
+  // 4) console.log/debug
   const consoleLines = [];
   lines.forEach((l, i) => {
     if (/console\.(log|debug)\(/.test(l)) consoleLines.push(i + 1);
   });
-  if (consoleLines.length)
-    findings.push({
-      type: "quality",
-      severity: "low",
-      title: "console.* în cod",
-      detail: "În producție folosește un logger sau elimină.",
-      lines: consoleLines,
-    });
+  if (consoleLines.length) {
+    pushFinding(
+      consoleLines,
+      "quality",
+      "low",
+      "console.* în cod",
+      "În cod de producție folosește un logger sau elimină."
+    );
+  }
+
+  // 5) TODO/FIXME
+  const todoLines = [];
+  lines.forEach((l, i) => {
+    if (/TODO|FIXME/.test(l)) todoLines.push(i + 1);
+  });
+  if (todoLines.length) {
+    pushFinding(
+      todoLines,
+      "process",
+      "info",
+      "Marcaje TODO/FIXME",
+      "Există TODO/FIXME; planifică rezolvarea sau documentează intenția."
+    );
+  }
+
   return {
     engine: "rules",
     filename,
@@ -87,11 +165,12 @@ function simpleStaticReview(code = "", filename = "snippet.js") {
     suggestions: [
       "Adaugă ESLint cu o configurație de bază.",
       "Scrie teste pentru funcțiile importante.",
+      "Documentează API-urile publice în README.",
     ],
   };
 }
 
-/* ------------------------ OLLAMA: REVIEW ------------------------ */
+/* ------------------------ Ollama: Review (cu linii + code_excerpt) ------------------------ */
 async function tryOllamaReview(
   code,
   filename = "snippet.js",
@@ -102,16 +181,24 @@ async function tryOllamaReview(
   try {
     const prompt = `
 You are a strict JSON generator for code reviews.
-Return ONLY a compact JSON object with this exact schema:
+Return ONLY JSON with this exact schema:
 {
   "findings": [
-    {"type":"security|quality|style|maintainability","severity":"low|medium|high","title":"...","detail":"..."}
+    {
+      "type":"security|quality|style|maintainability",
+      "severity":"low|medium|high",
+      "title":"...",
+      "detail":"...",
+      "lines":[1,2,3],              // 1-based line numbers if known
+      "code_excerpt":["line text"]  // exact code lines for the issue
+    }
   ],
   "suggestions": ["...", "..."]
 }
-No prose, no markdown fences.
+No prose outside JSON. No markdown fences.
 
-Analyze file ${filename}. If no problems, use an empty "findings" array and still provide 1–3 suggestions.
+Analyze file ${filename}.
+When possible, include "lines" and a short "code_excerpt" with the exact offending code lines.
 
 CODE:
 ${code}`.trim();
@@ -129,7 +216,6 @@ ${code}`.trim();
     const raw = String(data?.response || "").trim();
     const structured = tryParseJsonResponse(raw);
     if (!structured) return { engine: "ollama-llm", filename, raw };
-
     return { engine: "ollama-llm", filename, raw, structured };
   } catch {
     clearTimeout(t);
@@ -137,29 +223,26 @@ ${code}`.trim();
   }
 }
 
-/* ------------------------ OLLAMA: AUTO-FIX ------------------------ */
-// Cere LLM-ului să producă doar JSON cu câmpuri: fixed_code + changes[]
+/* ------------------------ Ollama: Auto-fix (păstrează comentariile) ------------------------ */
 async function tryOllamaFix(code, filename = "snippet.js", model = "llama3") {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), 25000);
   try {
     const prompt = `
 You are a precise refactoring assistant.
-Return ONLY JSON with the exact fields below. No markdown fences, no extra text.
+Return ONLY JSON with the exact fields. No extra text, no markdown.
 
 Schema:
 {
   "fixed_code": "<entire file after fixes>",
-  "changes": [
-    {"title":"...","detail":"..."}
-  ]
+  "changes": [{"title":"...","detail":"..."}]
 }
 
-Guidelines:
-- Fix low-risk issues improving clarity/maintainability (template strings, remove trivial dead code, safer patterns).
-- Keep original intent and behavior.
-- Do NOT invent APIs or import libraries.
-- If the code is fine, return "fixed_code" identical to input and one/two small suggestions in "changes".
+Hard constraints:
+- Preserve ALL comments verbatim; DO NOT remove or rewrite comments.
+- Keep original behavior; do not invent identifiers/APIs.
+- Prefer small, mechanical improvements (e.g., use template literals, minor clarity).
+- If constraints cannot be satisfied, return "fixed_code" IDENTICAL to input and one change explaining why.
 
 File: ${filename}
 INPUT CODE:
@@ -179,25 +262,57 @@ ${code}`.trim();
     const raw = String(data?.response || "").trim();
     const json = tryParseJsonResponse(raw);
     if (!json || typeof json.fixed_code !== "string") {
-      return { engine: "ollama-fix", filename, raw }; // raw pentru debugging în UI
+      return { engine: "ollama-fix", filename, raw };
     }
+
+    const fixed = json.fixed_code;
     const changes = Array.isArray(json.changes) ? json.changes : [];
-    return {
-      engine: "ollama-fix",
-      filename,
-      fixed_code: json.fixed_code,
-      changes,
-      raw,
-    };
+
+    // 1) Validare sintaxă
+    if (!isJsSyntaxValid(fixed)) {
+      return {
+        engine: "auto-fix-invalid",
+        filename,
+        fixed_code: code,
+        changes: [
+          {
+            title: "Reverted due to syntax error",
+            detail: "LLM produced invalid JavaScript; kept original file.",
+          },
+        ],
+        raw,
+      };
+    }
+
+    // 2) Păstrare comentarii (conservator)
+    const beforeComments = extractComments(code);
+    const afterComments = extractComments(fixed);
+    if (
+      beforeComments.length &&
+      afterComments.length < Math.floor(beforeComments.length * 0.8)
+    ) {
+      return {
+        engine: "auto-fix-reverted",
+        filename,
+        fixed_code: code,
+        changes: [
+          {
+            title: "Reverted to preserve comments",
+            detail: "Fix would remove or alter many comments.",
+          },
+        ],
+        raw,
+      };
+    }
+
+    return { engine: "ollama-fix", filename, fixed_code: fixed, changes, raw };
   } catch {
     clearTimeout(t);
     return null;
   }
 }
 
-/* ------------------------ ENDPOINTS PUBLICE ------------------------ */
-
-// Review: LLM dacă este activ, altfel fallback
+/* ------------------------ Endpoints ------------------------ */
 app.post("/api/review", async (req, res) => {
   const {
     code = "",
@@ -211,7 +326,6 @@ app.post("/api/review", async (req, res) => {
   return res.json(simpleStaticReview(code, filename));
 });
 
-// Auto-fix: LLM produce codul final; fallback = returnează identic cu o „schimbare” informativă
 app.post("/api/auto-fix", async (req, res) => {
   const {
     code = "",
@@ -220,7 +334,6 @@ app.post("/api/auto-fix", async (req, res) => {
   } = req.body || {};
   const llm = await tryOllamaFix(code, filename, model);
   if (llm?.fixed_code) return res.json({ ok: true, ...llm });
-  // fallback: fără hardcode de reguli; doar informăm că nu a reușit
   return res.json({
     ok: true,
     engine: "auto-fix-fallback",
@@ -236,12 +349,12 @@ app.post("/api/auto-fix", async (req, res) => {
   });
 });
 
-// Catch-all pentru SPA (Express 5)
+// SPA
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Pornire + diagnostic
+// Start
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   console.log(`Server pornit pe http://localhost:${PORT}`);
