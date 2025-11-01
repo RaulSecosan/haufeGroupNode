@@ -6,100 +6,33 @@
     <title>AI Code Review</title>
     <style>
       :root {
-        --bg: #0b1220;
-        --panel: #0f172a;
-        --soft: #111a2e;
-        --muted: #0e1629;
-        --ink: #e5e7eb;
-        --ink-dim: #cbd5e1;
-        --brand: #60a5fa;
-        --ok: #22c55e;
-        --warn: #f59e0b;
-        --err: #ef4444;
-        --brd: rgba(255,255,255,.08);
+        --bg:#0b1220; --panel:#0f172a; --soft:#111a2e; --muted:#0e1629;
+        --ink:#e5e7eb; --ink-dim:#cbd5e1; --brand:#60a5fa; --warn:#f59e0b; --err:#ef4444;
+        --brd:rgba(255,255,255,.08);
       }
-      * { box-sizing: border-box; }
-      html, body { height: 100%; }
-      body {
-        margin: 0;
-        background: radial-gradient(1200px 800px at 10% -10%, #0b1d42 0%, var(--bg) 60%) fixed;
-        color: var(--ink);
-        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      }
-      .container {
-        max-width: 1100px;
-        margin: 32px auto;
-        padding: 0 20px;
-      }
-      .header {
-        display: flex; align-items: center; justify-content: space-between;
-        margin-bottom: 18px;
-      }
-      .title {
-        font-size: 32px; font-weight: 800; letter-spacing: .2px;
-      }
-      .subtle {
-        color: var(--ink-dim);
-        font-size: 13px;
-      }
-      .panel {
-        background: linear-gradient(180deg, var(--panel) 0%, var(--soft) 100%);
-        border: 1px solid var(--brd);
-        border-radius: 16px;
-        padding: 16px;
-        box-shadow: 0 10px 30px rgba(0,0,0,.25);
-      }
-      .toolbar {
-        display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-        padding: 10px; border-radius: 12px; background: rgba(255,255,255,.03);
-        border: 1px solid var(--brd); margin-bottom: 12px;
-      }
-      .btn {
-        padding: 9px 14px; border-radius: 10px; cursor: pointer; border: 1px solid var(--brd);
-        background: #101a33; color: var(--ink); transition: .15s ease; font-weight: 600;
-      }
-      .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.25); }
-      .btn.primary { background: linear-gradient(180deg, #2563eb, #1d4ed8); border: 1px solid rgba(255,255,255,.15); }
-      .btn.ghost { background: transparent; }
-      .tag {
-        display: inline-flex; align-items: center; gap: 6px;
-        border: 1px solid var(--brd); padding: 4px 10px; border-radius: 999px;
-        font-size: 12px; background: rgba(255,255,255,.03);
-      }
-      input[type="text"], select {
-        height: 38px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--brd);
-        background: #0e1629; color: var(--ink); outline: none;
-      }
-      input[type="file"] { display: none; }
-      label.file {
-        padding: 9px 14px; border-radius: 10px; cursor: pointer; border: 1px dashed var(--brd);
-        background: rgba(255,255,255,.04); color: var(--ink); transition: .15s ease; font-weight: 600;
-      }
-      label.file:hover { background: rgba(255,255,255,.06); }
-      textarea {
-        width: 100%; min-height: 280px; resize: vertical;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: 13px; line-height: 1.5;
-        background: #091226; color: #e2e8f0;
-        border: 1px solid var(--brd); border-radius: 12px;
-        padding: 12px;
-      }
-      .grid { display: grid; gap: 12px; }
-      @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
-      .card {
-        background: rgba(255,255,255,.03); border: 1px solid var(--brd); border-radius: 12px; padding: 12px;
-      }
-      pre {
-        margin: 8px 0 0; background: #0a1330; border: 1px solid var(--brd);
-        border-radius: 10px; padding: 10px; color: #dbeafe; overflow: auto;
-        white-space: pre-wrap; word-break: break-word;
-      }
-      .sev { font-weight: 700; }
-      .sev-low { color: var(--brand); }
-      .sev-medium { color: var(--warn); }
-      .sev-high { color: var(--err); }
-      .error { color: var(--err); margin-top: 8px; }
-      .meta { display:flex; gap:8px; flex-wrap:wrap; }
+      *{box-sizing:border-box} html,body{height:100%}
+      body{margin:0;background:radial-gradient(1200px 800px at 10% -10%, #0b1d42 0%, var(--bg) 60%) fixed;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+      .container{max-width:1100px;margin:32px auto;padding:0 20px}
+      .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+      .title{font-size:32px;font-weight:800;letter-spacing:.2px}
+      .subtle{color:var(--ink-dim);font-size:13px}
+      .panel{background:linear-gradient(180deg,var(--panel) 0%,var(--soft) 100%);border:1px solid var(--brd);border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+      .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--brd);margin-bottom:12px}
+      .btn{padding:9px 14px;border-radius:10px;cursor:pointer;border:1px solid var(--brd);background:#101a33;color:var(--ink);transition:.15s;font-weight:600}
+      .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.25)}
+      .btn.primary{background:linear-gradient(180deg,#2563eb,#1d4ed8);border:1px solid rgba(255,255,255,.15)}
+      .btn.ghost{background:transparent}
+      .tag{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--brd);padding:4px 10px;border-radius:999px;font-size:12px;background:rgba(255,255,255,.03)}
+      input[type="text"],select{height:38px;padding:0 10px;border-radius:10px;border:1px solid var(--brd);background:#0e1629;color:var(--ink);outline:none}
+      input[type="file"]{display:none}
+      label.file{padding:9px 14px;border-radius:10px;cursor:pointer;border:1px dashed var(--brd);background:rgba(255,255,255,.04);color:var(--ink);transition:.15s;font-weight:600}
+      label.file:hover{background:rgba(255,255,255,.06)}
+      textarea{width:100%;min-height:280px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.5;background:#091226;color:#e2e8f0;border:1px solid var(--brd);border-radius:12px;padding:12px}
+      .grid{display:grid;gap:12px} @media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
+      .card{background:rgba(255,255,255,.03);border:1px solid var(--brd);border-radius:12px;padding:12px}
+      pre{margin:8px 0 0;background:#0a1330;border:1px solid var(--brd);border-radius:10px;padding:10px;color:#dbeafe;overflow:auto;white-space:pre-wrap;word-break:break-word}
+      .sev{font-weight:700}.sev-low{color:#60a5fa}.sev-medium{color:var(--warn)}.sev-high{color:var(--err)}
+      .error{color:var(--err);margin-top:8px} .meta{display:flex;gap:8px;flex-wrap:wrap}
     </style>
   </head>
   <body>
@@ -112,13 +45,12 @@
       <div class="panel" id="root"></div>
     </div>
 
-    <!-- React 18 UMD -->
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script type="text/babel">
-      const { useState, useEffect, Fragment } = React;
+      const { useState, Fragment } = React;
 
       function Severity({ level }) {
         const cls = level === "high" ? "sev-high" : level === "medium" ? "sev-medium" : "sev-low";
@@ -184,11 +116,17 @@ function hello(name){
 `);
         const [useLlm, setUseLlm] = useState(true);
         const [model, setModel] = useState("llama3");
-
         const [report, setReport] = useState(null);
         const [loading, setLoading] = useState(false);
         const [error, setError] = useState("");
         const [beforeFix, setBeforeFix] = useState(null);
+
+        function handleFile(e) {
+          const file = e.target.files?.[0]; if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => { setFilename(file.name); setCode(String(reader.result || "")); };
+          reader.readAsText(file);
+        }
 
         async function submitReview() {
           setLoading(true); setError(""); setReport(null);
@@ -199,11 +137,8 @@ function hello(name){
               body: JSON.stringify({ code, filename, useLlm, model }),
             });
             setReport(await res.json());
-          } catch {
-            setError("Eroare la apelul API");
-          } finally {
-            setLoading(false);
-          }
+          } catch { setError("Eroare la apelul API"); }
+          finally { setLoading(false); }
         }
 
         async function autoFixAI() {
@@ -219,138 +154,73 @@ function hello(name){
             if (data?.fixed_code) {
               setCode(data.fixed_code);
               setReport({
-                engine: data.engine,
-                filename: data.filename,
+                engine: data.engine, filename: data.filename,
                 structured: { findings: [], suggestions: [] },
-                raw: data.raw,
-                changes: data.changes,
+                raw: data.raw, changes: data.changes,
               });
-              if (data.engine === "auto-fix-invalid" || data.engine === "auto-fix-reverted") {
-                setError("Auto-fix a fost revenit pentru a păstra validitatea sau comentariile.");
+              if (data.engine !== "ollama-fix") {
+                setError("Auto-fix a fost revenit sau nu a aplicat modificări.");
               }
             } else {
               setError("Auto-fix: răspuns invalid");
             }
-          } catch {
-            setError("Eroare la auto-fix");
-          } finally {
-            setLoading(false);
-          }
+          } catch { setError("Eroare la auto-fix"); }
+          finally { setLoading(false); }
         }
 
-        function undoFix() {
-          if (beforeFix != null) {
-            setCode(beforeFix);
-            setBeforeFix(null);
-          }
-        }
+        function undoFix() { if (beforeFix != null) { setCode(beforeFix); setBeforeFix(null); } }
 
         function downloadJson() {
-          const payload = report?.structured || report || {};
+          const payload = report || {};
           const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
+          const url = URL.createObjectURL(blob); const a = document.createElement("a");
           a.href = url; a.download = (report?.filename || "report") + ".json"; a.click();
           URL.revokeObjectURL(url);
         }
 
-        function handleFile(e) {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = () => {
-            setFilename(file.name);
-            setCode(String(reader.result || ""));
-          };
-          reader.readAsText(file);
-        }
-
-        useEffect(() => {
-          // opțional, autofocus pe editor
-          document.getElementById("code-area")?.focus();
-        }, []);
-
-        const engine = report?.engine || "n/a";
-        const findings = report?.structured?.findings || report?.findings || [];
-        const suggestions = report?.structured?.suggestions || report?.suggestions || [];
+        const engines = report?.engines || (report?.engine ? [report.engine] : []);
+        const findings = report?.findings || [];
+        const suggestions = report?.suggestions || [];
 
         return (
           <Fragment>
             <div className="toolbar">
-              <input
-                type="text"
-                placeholder="ex: snippet.js"
-                value={filename}
-                onChange={(e) => setFilename(e.target.value)}
-              />
+              <input type="text" placeholder="ex: snippet.js" value={filename} onChange={(e)=>setFilename(e.target.value)} />
 
-              <label className="file">
-                Încarcă fișier
-                <input
-                  type="file"
-                  accept=".js,.jsx,.ts,.tsx,.json,.py,.java,.go,.rb,.cs,.cpp,.c,.txt"
-                  onChange={handleFile}
-                />
+              <label className="file">Încarcă fișier
+                <input type="file" accept=".js,.jsx,.ts,.tsx,.json,.py,.java,.go,.rb,.cs,.cpp,.c,.txt" onChange={handleFile} />
               </label>
 
               <label className="tag" style={{ gap: 8 }}>
-                <input
-                  type="checkbox"
-                  checked={useLlm}
-                  onChange={(e) => setUseLlm(e.target.checked)}
-                />
-                Use LLM
+                <input type="checkbox" checked={useLlm} onChange={(e)=>setUseLlm(e.target.checked)} /> Use LLM
               </label>
 
-              <select value={model} onChange={(e) => setModel(e.target.value)}>
+              <select value={model} onChange={(e)=>setModel(e.target.value)}>
                 <option value="llama3">llama3</option>
                 <option value="qwen2.5-coder:7b">qwen2.5-coder:7b</option>
               </select>
 
-              <button className="btn primary" onClick={submitReview} disabled={loading}>
-                {loading ? "Analizez..." : "Trimite spre analiză"}
-              </button>
+              <button className="btn primary" onClick={submitReview} disabled={loading}>{loading ? "Analizez..." : "Trimite spre analiză"}</button>
               <button className="btn" onClick={autoFixAI} disabled={loading}>Auto-fix (AI)</button>
-              {beforeFix != null && (
-                <button className="btn ghost" onClick={undoFix}>Revenire</button>
-              )}
-              {report && (
-                <button className="btn ghost" onClick={downloadJson}>Descarcă JSON</button>
-              )}
+              {beforeFix != null && <button className="btn ghost" onClick={undoFix}>Revenire</button>}
+              {report && <button className="btn ghost" onClick={downloadJson}>Descarcă JSON</button>}
 
               <div className="meta" style={{ marginLeft: "auto" }}>
-                <span className="tag">engine: {engine}</span>
+                {engines?.map((e,i)=><span key={i} className="tag">engine: {e}</span>)}
                 <span className="tag">file: {report?.filename || filename}</span>
               </div>
             </div>
 
-            <textarea
-              id="code-area"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              spellCheck={false}
-              placeholder="// pune codul aici..."
-            />
+            <textarea value={code} onChange={(e)=>setCode(e.target.value)} spellCheck={false} placeholder="// pune codul aici..." />
 
             {error && <div className="error">{error}</div>}
 
             {report && (
               <div style={{ marginTop: 14 }}>
-                {engine === "ollama-llm" && !report.structured && (
-                  <div className="card" style={{ marginBottom: 12 }}>
-                    <strong>LLM Feedback (raw)</strong>
-                    <pre>{report.raw || ""}</pre>
-                  </div>
-                )}
-
                 {Array.isArray(report?.changes) && report.changes.length > 0 && (
                   <div className="card" style={{ marginBottom: 12 }}>
                     <strong>Auto-fix changes</strong>
-                    <ul>
-                      {report.changes.map((c, i) => (
-                        <li key={i}><strong>{c.title}</strong> — {c.detail}</li>
-                      ))}
-                    </ul>
+                    <ul>{report.changes.map((c,i)=><li key={i}><strong>{c.title}</strong> — {c.detail}</li>)}</ul>
                   </div>
                 )}
 
