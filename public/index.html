@@ -3,15 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>React simplu</title>
-
+    <title>React simplu – AI Code Review & Auto-fix</title>
     <style>
       :root {
-        --bg: #ffffff;
         --muted: #f5f5f5;
         --border: #e5e7eb;
         --text: #111827;
-        --ok: #10b981;
         --low: #3b82f6;
         --med: #f59e0b;
         --high: #ef4444;
@@ -23,7 +20,6 @@
         font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
         margin: 24px;
         color: var(--text);
-        background: var(--bg);
       }
       .btn {
         padding: 8px 14px;
@@ -32,7 +28,8 @@
         cursor: pointer;
         background: #fff;
       }
-      input {
+      input,
+      select {
         padding: 8px;
         margin-right: 8px;
         border: 1px solid var(--border);
@@ -40,7 +37,7 @@
       }
       textarea {
         width: 100%;
-        height: 220px;
+        height: 260px;
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         padding: 10px;
         border: 1px solid var(--border);
@@ -72,19 +69,14 @@
         padding: 12px;
         background: #fff;
       }
-      .row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-      }
       .tag {
         display: inline-block;
         padding: 2px 8px;
         border-radius: 999px;
         font-size: 12px;
-        background: var(--muted);
+        background: #fff;
         border: 1px solid var(--border);
+        margin-right: 6px;
       }
       .sev {
         font-weight: 600;
@@ -98,16 +90,11 @@
       .sev-high {
         color: var(--high);
       }
-      .empty {
-        opacity: 0.7;
-        font-style: italic;
-      }
-      .title {
-        margin: 0 0 6px;
-        font-size: 16px;
-      }
-      .subtle {
-        opacity: 0.8;
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
       }
       @media (min-width: 860px) {
         .grid {
@@ -116,7 +103,6 @@
       }
     </style>
   </head>
-
   <body>
     <h1>React simplu</h1>
     <div id="root"></div>
@@ -133,15 +119,19 @@
     <!-- Babel pentru JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Cod React cu JSX -->
     <script type="text/babel">
       const { useState, useEffect, Fragment } = React;
 
-      function SeverityTag({ level }) {
-        const map = { low: "sev-low", medium: "sev-medium", high: "sev-high" };
+      function Severity({ level }) {
+        const cls =
+          level === "high"
+            ? "sev-high"
+            : level === "medium"
+            ? "sev-medium"
+            : "sev-low";
         return (
-          <span className={`sev ${map[level] || ""}`}>
-            {level?.toUpperCase?.() || "INFO"}
+          <span className={`sev ${cls}`}>
+            {(level || "info").toUpperCase()}
           </span>
         );
       }
@@ -149,8 +139,8 @@
       function Findings({ list }) {
         if (!Array.isArray(list) || list.length === 0) {
           return (
-            <div className="empty">
-              Nu s-au găsit probleme pe regulile de bază.
+            <div className="card">
+              Nu s-au găsit probleme pe analiza curentă.
             </div>
           );
         }
@@ -158,10 +148,18 @@
           <div className="grid">
             {list.map((f, i) => (
               <div className="card" key={i}>
-                <h4 className="title">
-                  [{f.type}] <SeverityTag level={f.severity} /> — {f.title}
-                </h4>
-                <div className="subtle">{f.detail}</div>
+                <div style={{ marginBottom: 6 }}>
+                  <span className="tag">[{f.type || "info"}]</span>
+                  <Severity level={f.severity} />
+                </div>
+                <strong>{f.title}</strong>
+                <div style={{ opacity: 0.85, marginTop: 4 }}>{f.detail}</div>
+                {Array.isArray(f.lines) && f.lines.length > 0 && (
+                  <div style={{ marginTop: 6, fontSize: 12, opacity: 0.8 }}>
+                    Linii: {f.lines.slice(0, 15).join(", ")}
+                    {f.lines.length > 15 ? " ..." : ""}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -189,9 +187,13 @@ function hello(name){
   console.log("Hello, " + name) // TODO: folosește template string
 }
 `);
+        const [useLlm, setUseLlm] = useState(true);
+        const [model, setModel] = useState("llama3");
+
         const [report, setReport] = useState(null);
         const [loading, setLoading] = useState(false);
         const [error, setError] = useState("");
+        const [beforeFix, setBeforeFix] = useState(null); // pentru „Revenire”
 
         async function callPing() {
           const res = await fetch("/api/ping");
@@ -206,20 +208,75 @@ function hello(name){
             const res = await fetch("/api/review", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ code, filename }),
+              body: JSON.stringify({ code, filename, useLlm, model }),
             });
-            const data = await res.json();
-            setReport(data);
-          } catch (e) {
+            setReport(await res.json());
+          } catch {
             setError("Eroare la apelul API");
           } finally {
             setLoading(false);
           }
         }
 
+        async function autoFixAI() {
+          setLoading(true);
+          setError("");
+          try {
+            setBeforeFix(code); // salvează starea anterioară pentru revenire
+            const res = await fetch("/api/auto-fix", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code, filename, model }),
+            });
+            const data = await res.json();
+            if (data?.fixed_code) {
+              setCode(data.fixed_code);
+              setReport({
+                engine: data.engine,
+                filename: data.filename,
+                structured: { findings: [], suggestions: [] },
+                raw: data.raw,
+                changes: data.changes,
+              });
+            } else {
+              setError("Auto-fix: răspuns invalid");
+            }
+          } catch {
+            setError("Eroare la auto-fix");
+          } finally {
+            setLoading(false);
+          }
+        }
+
+        function undoFix() {
+          if (beforeFix != null) {
+            setCode(beforeFix);
+            setBeforeFix(null);
+          }
+        }
+
+        function downloadJson() {
+          const payload = report?.structured || report || {};
+          const blob = new Blob([JSON.stringify(payload, null, 2)], {
+            type: "application/json",
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = (report?.filename || "report") + ".json";
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+
         useEffect(() => {
           callPing();
         }, []);
+
+        const engine = report?.engine || "n/a";
+        const structured = report?.structured;
+        const findings = structured?.findings || report?.findings || [];
+        const suggestions =
+          structured?.suggestions || report?.suggestions || [];
 
         return (
           <Fragment>
@@ -237,15 +294,42 @@ function hello(name){
             <hr />
 
             <h3>Code review local</h3>
-            <div className="row" style={{ marginBottom: 8 }}>
+            <div className="toolbar" style={{ marginBottom: 8 }}>
               <input
                 placeholder="filename"
                 value={filename}
                 onChange={(e) => setFilename(e.target.value)}
               />
+              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={useLlm}
+                  onChange={(e) => setUseLlm(e.target.checked)}
+                />
+                Use LLM
+              </label>
+              <select value={model} onChange={(e) => setModel(e.target.value)}>
+                <option value="llama3">llama3</option>
+                <option value="qwen2.5-coder:7b">qwen2.5-coder:7b</option>
+              </select>
               <button className="btn" onClick={submitReview} disabled={loading}>
                 {loading ? "Analizez..." : "Trimite spre analiză"}
               </button>
+              <button className="btn" onClick={autoFixAI} disabled={loading}>
+                Auto-fix (AI)
+              </button>
+              {beforeFix != null && (
+                <button className="btn" onClick={undoFix}>
+                  Revenire
+                </button>
+              )}
+              {report && (
+                <button className="btn" onClick={downloadJson}>
+                  Descarcă JSON
+                </button>
+              )}
+              <span className="tag">engine: {engine}</span>
+              <span className="tag">file: {report?.filename || filename}</span>
             </div>
 
             <textarea
@@ -260,18 +344,32 @@ function hello(name){
 
             {report && (
               <div style={{ marginTop: 12 }}>
-                <div style={{ marginBottom: 8 }}>
-                  <span className="tag">engine: {report.engine}</span>
-                  <span className="tag" style={{ marginLeft: 6 }}>
-                    file: {report.filename || filename}
-                  </span>
-                </div>
+                {engine === "ollama-llm" && !structured && (
+                  <div className="card" style={{ marginBottom: 12 }}>
+                    <strong>LLM Feedback (raw)</strong>
+                    <pre>{report.raw || ""}</pre>
+                  </div>
+                )}
+
+                {Array.isArray(report?.changes) &&
+                  report.changes.length > 0 && (
+                    <div className="card" style={{ marginBottom: 12 }}>
+                      <strong>Auto-fix changes</strong>
+                      <ul>
+                        {report.changes.map((c, i) => (
+                          <li key={i}>
+                            <strong>{c.title}</strong> — {c.detail}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                 <h4>Findings</h4>
-                <Findings list={report.findings} />
+                <Findings list={findings} />
 
                 <h4 style={{ marginTop: 16 }}>Sugestii</h4>
-                <Suggestions items={report.suggestions} />
+                <Suggestions items={suggestions} />
               </div>
             )}
           </Fragment>
