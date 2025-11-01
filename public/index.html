@@ -1,60 +1,84 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ro">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>React + Node</title>
+    <title>React simplu</title>
+
     <style>
-      body { font-family: system-ui, sans-serif; margin: 24px; }
-      .btn { padding: 8px 14px; border: 1px solid #ccc; border-radius: 8px; cursor: pointer; }
-      input { padding: 8px; margin-right: 8px; }
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 24px;
+      }
+      .btn {
+        padding: 8px 14px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      input {
+        padding: 8px;
+        margin-right: 8px;
+      }
+      pre {
+        background: #f7f7f7;
+        padding: 8px;
+        border-radius: 8px;
+      }
     </style>
   </head>
+
   <body>
-    <h1>React simplu cu CDN</h1>
+    <h1>React simplu</h1>
     <div id="root"></div>
 
-    <!-- React 18 UMD -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <!-- React + ReactDOM -->
+    <script
+      src="https://unpkg.com/react@18/umd/react.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+      crossorigin
+    ></script>
 
-    <!-- Babel pentru JSX în browser. Doar în dezvoltare. -->
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <!-- Babel pentru JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script type="text/babel">
       const { useState, useEffect } = React;
 
       function App() {
-        const [name, setName] = useState('');
+        const [name, setName] = useState("");
         const [ping, setPing] = useState(null);
 
         async function callPing() {
-          try {
-            const res = await fetch('/api/ping');
-            const data = await res.json();
-            setPing(data);
-          } catch {
-            setPing({ ok: false });
-          }
+          const res = await fetch("/api/ping");
+          const data = await res.json();
+          setPing(data);
         }
 
-        useEffect(() => { callPing(); }, []);
+        useEffect(() => {
+          callPing();
+        }, []);
 
         return (
           <div>
-            <p>Salut, {name || 'vizitator'}!</p>
+            <p>Salut, {name || "vizitator"}!</p>
             <input
               placeholder="scrie un nume..."
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-            <button className="btn" onClick={callPing}>Ping backend</button>
-            <pre>{ping ? JSON.stringify(ping, null, 2) : '...'}</pre>
+            <button className="btn" onClick={callPing}>
+              Ping backend
+            </button>
+            <pre>{ping ? JSON.stringify(ping, null, 2) : "..."}</pre>
           </div>
         );
       }
 
-      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
     </script>
   </body>
 </html>
